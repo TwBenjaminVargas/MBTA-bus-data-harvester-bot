@@ -241,37 +241,6 @@ class TuBondiClient:
         logger.debug(f"Se mapearon {len(mapa)} claves de rutas a clientes.")
         return mapa
 
-    def obtener_cliente_de_ruta(self, ruta: str | int, linea: str = None) -> str:
-        """Resuelve dinámicamente el cliente_id asociado a una ruta.
-
-        Args:
-            ruta (str | int): ID o código de la ruta.
-            linea (str, optional): Nombre de la línea para resolver ambigüedades.
-
-        Returns:
-            str: Identificador numérico de la empresa (cliente_id).
-
-        Raises:
-            TuBondiError: Si no se puede determinar la empresa para la ruta/línea.
-        """
-        ruta_key = str(ruta).strip()
-
-        # Búsqueda por clave compuesta unívoca (Línea + Ruta)
-        if linea:
-            clave_compuesta = f"{str(linea).strip()}_{ruta_key}"
-            if clave_compuesta in self.mapa_rutas_clientes:
-                return self.mapa_rutas_clientes[clave_compuesta]
-
-        # Búsqueda por ID de ruta directo (Fallback)
-        if ruta_key in self.mapa_rutas_clientes:
-            return self.mapa_rutas_clientes[ruta_key]
-
-        # Si no existe en el catálogo, lanzamos la excepción
-        linea_info = f" de la línea '{linea}'" if linea else ""
-        raise TuBondiError(
-            f"No se pudo determinar el cliente_id para la ruta '{ruta_key}'{linea_info}. "
-            "Asegurate de que la ruta exista en el catálogo o especifica la línea correspondiente."
-        )
 
     def obtener_lineas_y_rutas(self, refresh=False) -> dict:
         """Obtiene la totalidad de líneas, rutas, grupos y clientes del sistema."""
@@ -306,7 +275,7 @@ class TuBondiClient:
         logger.debug(f"Nombres de empresas extraídos: {mapa_nombres}")
         return mapa_nombres
 
-    def consultar_coche_por_ruta(self, ruta, coche="0", parada_seleccionada="", cliente=None) -> dict:
+    def consultar_coche_por_ruta(self, ruta,cliente, coche="0", parada_seleccionada="") -> dict:
         """Consulta la posición GPS y telemetría en tiempo real de los coches de una ruta.
         
         Args:
@@ -318,7 +287,7 @@ class TuBondiClient:
         Raises:
             TuBondiConnectionError: Si hay fallos de red o de servidor.
         """
-        cliente_final = str(cliente) if cliente is not None else self.obtener_cliente_de_ruta(ruta)
+        cliente_final = str(cliente)
         
         payload = {
             "cmd": "consultacocheporruta",
@@ -330,9 +299,9 @@ class TuBondiClient:
         logger.debug(f"Consultando telemetría para ruta={ruta}, cliente={cliente_final}")
         return self._post(payload)
 
-    def obtener_traza_por_ruta(self, ruta, cliente=None) -> dict:
+    def obtener_traza_por_ruta(self, ruta, cliente) -> dict:
         """Obtiene las coordenadas geográficas del recorrido y ubicación de paradas."""
-        cliente_final = str(cliente) if cliente is not None else self.obtener_cliente_de_ruta(ruta)
+        cliente_final = str(cliente)
         
         payload = {
             "cmd": "seleccionatraza",
