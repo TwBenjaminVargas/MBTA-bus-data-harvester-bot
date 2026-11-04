@@ -1,5 +1,7 @@
 import modules.MBTApiClient as mbta_client
 import modules.ProcesadorGTFS as gtfs_processor
+import modules.TimeAPIClient as time_api_client
+import modules.OpenMeteoClient as open_meteo_client
 import os
 import json
 from dotenv import load_dotenv
@@ -25,11 +27,14 @@ if vehiculos_data:
     if lat is not None and lon is not None:
         distancia_en_traza = gtfs_processor_instance.calcular_distancia_en_traza(shape_id="010154", lon=lon, lat=lat)
         distancia_fuera_de_traza = gtfs_processor_instance.calcular_distancia_fuera_de_traza(shape_id="010154", lon=lon, lat=lat)
-
+        tiempo_localizacion = time_api_client.TimeAPIClient().get_time_by_coordinates(latitude=lat, longitude=lon)
+        clima_actual = open_meteo_client.OpenMeteoClient().get_current_weather(latitude=lat, longitude=lon)
         print(f"Vehículo 1: {json.dumps(bus_1_attributes, indent=2)}")
         print(f"Coorendadas: {lon},{lat}")
         print(f"Distancia en traza: {distancia_en_traza:.2f} km")
         print(f"Distancia fuera de traza: {distancia_fuera_de_traza:.2f} m")
+        print(f"Tiempo local: {json.dumps(tiempo_localizacion, indent=2)}")
+        print(f"Clima actual: {json.dumps(clima_actual, indent=2)}")
     else:
         print("El vehículo no cuenta con coordenadas de latitud/longitud válidas.")
 else:
