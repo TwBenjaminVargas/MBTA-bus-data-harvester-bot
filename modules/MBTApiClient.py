@@ -1,7 +1,7 @@
 import requests
 import json
 
-class MBTAApiClient:
+class MBTApiClient:
     def __init__(self, token=None, base_url="https://api-v3.mbta.com"):
         """
         Instancia el cliente de la API.
@@ -46,7 +46,7 @@ class MBTAApiClient:
 # Ejemplo de uso:
 if __name__ == "__main__":
     # Instanciar pasando el token
-    cliente = MBTAApiClient(token="TU_TOKEN_AQUI")
+    cliente = MBTApiClient(token="TU_TOKEN_AQUI")
     
     # Consultar vehículos para la ruta "Red" (ejemplo)
     vehiculos = cliente.obtener_vehiculos_por_ruta("Red")

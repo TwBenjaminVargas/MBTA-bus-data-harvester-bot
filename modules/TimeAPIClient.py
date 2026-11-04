@@ -36,21 +36,15 @@ class TimeAPIClient:
             "longitude": longitude
         }
 
-        try:
-            response = requests.get(endpoint, params=params, timeout=self.timeout)
+        
+        response = requests.get(endpoint, params=params, timeout=self.timeout)
+        
+        # Lanzar una excepción si el código de estado HTTP indica un error (ej. 400 o 500)
+        response.raise_for_status()
+        
+        # Retornar el esquema 'CurrentTime' parseado como diccionario de Python
+        return response.json()
             
-            # Lanzar una excepción si el código de estado HTTP indica un error (ej. 400 o 500)
-            response.raise_for_status()
-            
-            # Retornar el esquema 'CurrentTime' parseado como diccionario de Python
-            return response.json()
-            
-        except requests.exceptions.HTTPError as http_err:
-            print(f"Error HTTP al consultar la API: {http_err} - Detalle: {response.text}")
-        except requests.exceptions.RequestException as req_err:
-            print(f"Error de conexión: {req_err}")
-            
-        return None
 
 # --- Ejemplo de uso ---
 if __name__ == "__main__":

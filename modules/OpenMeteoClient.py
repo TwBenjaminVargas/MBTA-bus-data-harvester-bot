@@ -1,3 +1,5 @@
+import json
+
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
@@ -71,6 +73,8 @@ if __name__ == "__main__":
     
     # Obtener los datos
     datos = clima_api.get_current_weather(latitude=lat, longitude=lon)
+    
+    print(json.dumps(datos, indent=2))  # Imprimir la respuesta completa en formato JSON
     
     # Imprimir los resultados
     print(f"Coordenadas: {datos['metadata']['latitude']}°N {datos['metadata']['longitude']}°E")

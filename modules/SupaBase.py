@@ -32,7 +32,7 @@ class Supabase:
             occupancy_status VARCHAR,
             latitude DECIMAL(10,8),
             longitude DECIMAL(10,8),
-            label VARCHAR,
+            bus_id VARCHAR,
             route_id VARCHAR,
             route_pattern_id VARCHAR,
             shape_id VARCHAR,
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         "occupancy_status": None, # Se registrará como NULL en Supabase para limpiarlo luego
         "latitude": -34.603722,
         "longitude": -58.381592,
-        "label": "1918",
+        "bus_id": "1918",
         "route_id": "1",
         "distancia_en_traza": 15.2,
         "es_desvio": False,
