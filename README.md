@@ -94,32 +94,36 @@ Para ser eficientes y **no agotar los tokens/cuota de la API de TomTom**, el bot
 
 El bot unifica los datos de todas las fuentes y los inserta en la base de datos con la siguiente estructura:
 
-| Origen / API | Campo | Tipo de Dato (SQL / DB) | Descripción / Uso en Machine Learning |
-| --- | --- | --- | --- |
-| **API Vehículo** | `bearing` | `FLOAT` / `INT` | Dirección del movimiento en grados ($0^\circ-360^\circ$). Útil para detectar patrones de trayectoria. |
-| | `current_status` | `VARCHAR` / `ENUM` | Estado actual (`IN_TRANSIT_TO`, `IN_INCOMING_AT`, etc.). Feature categórica. |
-| | `direction_id` | `INT` / `BOOLEAN` | Sentido del recorrido ($0$ o $1$). Categoría clave de la ruta. |
-| | `occupancy_status` | `VARCHAR` / `ENUM` | Ocupación del vehículo. Variable a predecir (Target) o feature categórica. |
-| | `latitude` / `longitude` | `DECIMAL(10,8)` | Posición geográfica exacta. Crucial para cálculo de distancias, clustering o embeddings espaciales. |
-| | `bus_id` | `VARCHAR` | Identificador único de la unidad/colectivo (ej. `1918`). Útil para análisis por unidad o embbedings de entidad. |
-| | `route_id` | `VARCHAR` / `INT` | Identificador de la ruta principal (ej. `1`). Feature categórica fundamental para agrupar viajes. |
-| | `route_pattern_id` | `VARCHAR` | Variante específica del patrón de ruta (ej. `1-_-0`). Permite diferenciar ramales o sub-recorridos. |
-| | `shape_id` | `VARCHAR` | Identificador del trazado geométrico exacto de la ruta (ej. `010154`). Clave para mapeo espacial. |
-| | `agency_id` | `VARCHAR` / `INT` | Identificador de la empresa u operador del servicio (ej. `1` o `3`). Feature categórica operativa. |
-| | `line_id` | `VARCHAR` | Identificador de la línea comercial o corredor (ej. `line-Red`). Agrupador categórico de alto nivel. |
-| **Traza (Procesado)** | `distancia_en_traza` | `FLOAT` / `DECIMAL` | Progreso en kilómetros dentro del recorrido planeado. Variable numérica directa. |
-| | `distancia_fuera_traza` | `FLOAT` / `DECIMAL` | Distancia métrica de desvío espacial respecto a la ruta oficial. |
-| | `es_desvio` | `BOOLEAN` / `INT` | **Flag binario ($1$/$0$)**. Se enciende ($1$) si `distancia_fuera_traza` supera el umbral tolerado. Feature categórica/target de anomalías. |
-| **API Tiempo Local** | `date_time` | `TIMESTAMP WITH TZ` | Marca temporal completa con zona horaria del evento local. |
-| | `timezone` | `VARCHAR` | Identificador de zona horaria (ej. `America/New_York`). Contexto para normalización y estacionalidad local. |
-| **API Clima** | `temperature_2m` | `FLOAT` | Temperatura ambiental a 2 metros (°C). Influye en la velocidad promedio, demanda y demoras. |
-| | `precipitation` | `FLOAT` | Precipitación acumulada (mm). Feature crítica para evaluar condiciones adversas de manejo. |
-| | `relative_humidity_2m` | `FLOAT` | Humedad relativa (%). Indicador complementario de niebla o visibilidad reducida. |
-| | `weather_code` | `INT` / `ENUM` | Código WMO de estado del tiempo (lluvia, nieve, despejado). Feature categórica. |
-| | `is_day` | `BOOLEAN` / `INT` | Indicador binario día/noche ($1$/$0$). Afecta visibilidad, densidad y flujo vehicular. |
-| **API TomTom** | `currentSpeed` | `FLOAT` | Velocidad real actual detectada en el tramo vial (km/h). |
-| | `freeFlowSpeed` | `FLOAT` | Velocidad teórica ideal en flujo libre del tramo vial (km/h). |
-| | `currentTravelTime` | `INT` | Tiempo actual de viaje en el tramo (segundos). |
-| | `freeFlowTravelTime` | `INT` | Tiempo de viaje ideal sin tráfico en el tramo (segundos). |
-| | `confidence` | `FLOAT` | Nivel de confianza/precisión de la medición del tráfico ($0.0$ a $1.0$). |
-| | `roadClosure` | `BOOLEAN` | Indicador de corte o cierre total de la vía ($1$/$0$). |
+
+| Origen / API | Campo | Tipo de Dato PostgreSQL | Modificadores / Detalle | Descripción / Uso en Machine Learning |
+| --- | --- | --- | --- | --- |
+| **API Vehículo** | `bearing` | `SMALLINT` | `CHECK (bearing >= 0 AND bearing <= 360)` | Dirección del movimiento en grados ($0^\circ-360^\circ$). Útil para patrones de trayectoria. |
+|  | `current_status` | `VARCHAR(25)` | `NULLABLE` | Estado actual (`IN_TRANSIT_TO`, `IN_INCOMING_AT`, etc.). Feature categórica. |
+|  | `direction_id` | `SMALLINT` | `CHECK (direction_id IN (0, 1))` | Sentido del recorrido ($0$ o $1$). Categoría clave de la ruta. |
+|  | `occupancy_status` | `VARCHAR(30)` | `NULLABLE` | Ocupación del vehículo (`MANY_SEATS_AVAILABLE`, etc.). Target o feature categórica. |
+|  | `latitude` | `DECIMAL(10,8)` | `NOT NULL` | Latitud exacta. Crucial para cálculos espaciales y clustering. |
+|  | `longitude` | `DECIMAL(11,8)` | `NOT NULL` | Longitud exacta. Crucial para cálculos espaciales y clustering. |
+|  | `bus_id` | `VARCHAR(20)` | `NOT NULL` | Identificador único de la unidad/colectivo (ej. `1918`). Útil para análisis por unidad. |
+|  | `route_id` | `VARCHAR(20)` | `NOT NULL` | Identificador de la ruta principal (ej. `1`). Feature categórica fundamental. |
+|  | `route_pattern_id` | `VARCHAR(30)` | `NULLABLE` | Variante del patrón de ruta (ej. `1-_-0`). Diferencia ramales o sub-recorridos. |
+|  | `shape_id` | `VARCHAR(30)` | `NULLABLE` | Identificador del trazado geométrico exacto de la ruta (ej. `010154`). |
+|  | `agency_id` | `VARCHAR(20)` | `NOT NULL` | Empresa u operador del servicio (ej. `1` o `3`). Feature categórica operativa. |
+|  | `line_id` | `VARCHAR(30)` | `NULLABLE` | Línea comercial o corredor (ej. `line-Red`). Agrupador categórico. |
+| **Traza (Procesado)** | `distancia_en_traza` | `REAL` | `NOT NULL` | Progreso en kilómetros dentro del recorrido planeado (precisión simple `FLOAT4`). |
+|  | `distancia_fuera_traza` | `REAL` | `NOT NULL` | Distancia métrica de desvío espacial respecto a la ruta oficial. |
+|  | `es_desvio` | `BOOLEAN` | `NOT NULL DEFAULT FALSE` | Flag binario (`TRUE`/`FALSE`). Se activa si supera el umbral tolerado. |
+| **API Tiempo Local** | `date_time` | `TIMESTAMPTZ` | `NOT NULL` | Timestamp completo con offset/zona horaria (`TIMESTAMP WITH TIME ZONE`). |
+|  | `timezone` | `VARCHAR(50)` | `NOT NULL` | Identificador de zona horaria (ej. `America/New_York`). |
+| **API Clima** | `temperature_2m` | `REAL` | `NULLABLE` | Temperatura ambiental a 2 metros (°C). Influye en velocidad y demoras. |
+|  | `precipitation` | `REAL` | `NULLABLE` | Precipitación acumulada (mm). Feature para condiciones adversas. |
+|  | `relative_humidity_2m` | `REAL` | `NULLABLE` | Humedad relativa (%). Indicador de niebla o visibilidad reducida. |
+|  | `weather_code` | `SMALLINT` | `NULLABLE` | Código WMO de estado del tiempo (lluvia, nieve, despejado). Feature categórica. |
+|  | `is_day` | `BOOLEAN` | `NULLABLE` | Indicador binario día/noche (`TRUE`/`FALSE`). Afecta visibilidad y flujo. |
+| **API TomTom** | `currentSpeed` | `REAL` | `NULLABLE` | Velocidad real actual detectada en el tramo (km/h). |
+|  | `freeFlowSpeed` | `REAL` | `NULLABLE` | Velocidad teórica ideal en flujo libre del tramo (km/h). |
+|  | `currentTravelTime` | `INTEGER` | `NULLABLE` | Tiempo actual de viaje en el tramo (segundos). |
+|  | `freeFlowTravelTime` | `INTEGER` | `NULLABLE` | Tiempo de viaje ideal sin tráfico en el tramo (segundos). |
+|  | `confidence` | `REAL` | `NULLABLE` | Confianza/precisión de la medición ($0.0$ a $1.0$). |
+|  | `roadClosure` | `BOOLEAN` | `NOT NULL DEFAULT FALSE` | Cierre o corte total de la vía (`TRUE`/`FALSE`). |
+
+---
